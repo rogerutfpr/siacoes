@@ -1,82 +1,40 @@
 package br.edu.utfpr.dv.siacoes.dao;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import br.edu.utfpr.dv.siacoes.log.UpdateEvent;
 import br.edu.utfpr.dv.siacoes.model.SigacConfig;
 
-public class SigacConfigDAO {
-	
-	public SigacConfig findByDepartment(int idDepartment) throws SQLException{
-		Connection conn = null;
-		PreparedStatement stmt = null;
-		ResultSet rs = null;
-		
-		try{
-			conn = ConnectionDAO.getInstance().getConnection();
-			stmt = conn.prepareStatement("SELECT * FROM sigacconfig WHERE idDepartment = ?");
-		
-			stmt.setInt(1, idDepartment);
-			
-			rs = stmt.executeQuery();
-			
-			if(rs.next()){
-				return this.loadObject(rs);
-			}else{
-				return null;
-			}
-		}finally{
-			if((rs != null) && !rs.isClosed())
-				rs.close();
-			if((stmt != null) && !stmt.isClosed())
-				stmt.close();
-			if((conn != null) && !conn.isClosed())
-				conn.close();
-		}
+public class SigacConfigDAO extends TemplateDAO<SigacConfig> {
+
+	@Override
+	protected String getStringSqlFindDepartment() {
+		return "SELECT * FROM sigacconfig WHERE idDepartment = ?";
 	}
-	
-	public int save(int idUser, SigacConfig config) throws SQLException{
-		boolean insert = (this.findByDepartment(config.getDepartment().getIdDepartment()) == null);
-		Connection conn = null;
-		PreparedStatement stmt = null;
-		
-		try{
-			conn = ConnectionDAO.getInstance().getConnection();
-			
-			if(insert){
-				stmt = conn.prepareStatement("INSERT INTO sigacconfig(minimumScore, maxfilesize, idDepartment) VALUES(?, ?, ?)");
-			}else{
-				stmt = conn.prepareStatement("UPDATE sigacconfig SET minimumScore=?, maxfilesize=? WHERE idDepartment=?");
-			}
-			
-			stmt.setDouble(1, config.getMinimumScore());
-			stmt.setInt(2, config.getMaxFileSize());
-			stmt.setInt(3, config.getDepartment().getIdDepartment());
-			
-			stmt.execute();
-			
-			new UpdateEvent(conn).registerUpdate(idUser, config);
-			
-			return config.getDepartment().getIdDepartment();
-		}finally{
-			if((stmt != null) && !stmt.isClosed())
-				stmt.close();
-			if((conn != null) && !conn.isClosed())
-				conn.close();
-		}
+
+	@Override
+	protected String getStringSqlSave() {
+		return "INSERT INTO sigacconfig(minimumScore, maxfilesize, idDepartment) VALUES(?, ?, ?)";
 	}
-	
-	private SigacConfig loadObject(ResultSet rs) throws SQLException{
-		SigacConfig config = new SigacConfig();
-		
-		config.getDepartment().setIdDepartment(rs.getInt("idDepartment"));
-		config.setMinimumScore(rs.getDouble("minimumScore"));
-		config.setMaxFileSize(rs.getInt("maxfilesize"));
-		
-		return config;
+
+	@Override
+	protected String getStringSqlUpdate() {
+		return "UPDATE sigacconfig SET minimumScore=?, maxfilesize=? WHERE idDepartment=?";
+	}
+
+	@Override
+	protected void ormSave(PreparedStatement statement, SigacConfig config) throws SQLException {
+		statement.setDouble(1, config.getMinimumScore());
+		statement.setInt(2, config.getMaxFileSize());
+		statement.setInt(3, config.getDepartment().getIdDepartment());
+	}
+
+	@Override
+	protected void setSigConfig(ResultSet rs, SigacConfig sigConfig) throws SQLException {
+		sigConfig.getDepartment().setIdDepartment(rs.getInt("idDepartment"));
+		sigConfig.setMinimumScore(rs.getDouble("minimumScore"));
+		sigConfig.setMaxFileSize(rs.getInt("maxfilesize"));
 	}
 
 }
